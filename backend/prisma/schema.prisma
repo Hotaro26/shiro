@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  username  String    @unique
+  password  String
+  bio       String?
+  avatarUrl String?
+  createdAt DateTime  @default(now())
+  posts     Post[]
+  comments  Comment[]
+  mentions  Mention[]
+  likedPosts Post[]    @relation("PostLikes")
+  forumsCreated Forum[]
+  
+  // Direct Messages
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  
+  // Follow system
+  followers User[]    @relation("UserFollows")
+  following User[]    @relation("UserFollows")
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  createdAt  DateTime @default(now())
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  senderId   Int
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiverId Int
+}
+
+model Post {
+  id        Int       @id @default(autoincrement())
+  content   String
+  mediaUrl  String?
+  mediaType String?   // "image" or "gif"
+  createdAt DateTime  @default(now())
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  Int
+  forum     Forum?    @relation(fields: [forumId], references: [id], onDelete: Cascade)
+  forumId   Int?
+  comments  Comment[]
+  mentions  Mention[]
+  likes     User[]    @relation("PostLikes")
+}
+
+model Forum {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  posts       Post[]
+  creator     User     @relation(fields: [creatorId], references: [id])
+  creatorId   Int
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  content   String
+  mediaUrl  String?
+  mediaType String?   // "image" or "gif"
+  createdAt DateTime  @default(now())
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  Int
+  post      Post      @relation(fields: [postId], references: [id])
+  postId    Int
+  mentions  Mention[]
+}
+
+model Mention {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  post      Post?    @relation(fields: [postId], references: [id])
+  postId    Int?
+  comment   Comment? @relation(fields: [commentId], references: [id])
+  commentId Int?
+}
